@@ -17,16 +17,16 @@ const InputField = () => {
 
       <div>
         <p>🇬🇧</p>
-        <p>{quoteBody.author_en}</p>
-        <p>{quoteBody.phrase_en}</p>
-        <p>{quoteBody.explanation_en}</p>
+        <p><span><bold>Author: </bold></span>{quoteBody.author_en}</p>
+        <p><span><bold>Phrase: </bold></span>{quoteBody.phrase_en}</p>
+        <p><span><bold>Explanation: </bold></span>{quoteBody.explanation_en}</p>
       </div>
 
       <div>
         <p>🇪🇸</p>
-        <p>{quoteBody.author_es}</p>
-        <p>{quoteBody.phrase_es}</p>
-        <p>{quoteBody.explanation_es}</p>
+        <p><span><bold>Autor: </bold></span>{quoteBody.author_es}</p>
+        <p><span><bold>Frase: </bold></span>{quoteBody.phrase_es}</p>
+        <p><span><bold>Explicación: </bold></span>{quoteBody.explanation_es}</p>
       </div>
     </div>
   );
