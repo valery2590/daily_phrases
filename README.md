@@ -47,8 +47,9 @@ Known limit: on the first request of the day, two simultaneous cache misses on d
 ```
 GET /api/quote                       → today's quote in every language
 GET /api/quote?lang=es               → one language (en | es | it)
-GET /api/quote/card?lang=it&format=story
+GET /api/quote/card?lang=it&format=story&theme=dark
                                      → PNG: story 1080×1920 · post 1080×1350 · og 1200×630
+                                       theme: light · dark (the share button follows the visitor's theme)
 ```
 
 ```json

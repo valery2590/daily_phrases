@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
 
 const UI: Record<Lang, { eyebrow: string; locale: string; missing: string; share: string; copy: string; copied: string; download: string; fallback: string; partial: string }> = {
@@ -38,6 +38,18 @@ const UI: Record<Lang, { eyebrow: string; locale: string; missing: string; share
     partial: "Alcune traduzioni non disponibili",
   },
 };
+
+function usePrefersDark() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+    () => false,
+  );
+}
 
 function formatDate(date: string, locale: string) {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
@@ -84,7 +96,9 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   const t = UI[lang];
   const textFor = (l: Lang) => quote.text[l] ?? quote.text.en ?? "";
   const text = textFor(lang);
-  const cardUrl = `/api/quote/card?lang=${lang}&format=story`;
+  // The shared image follows the theme the visitor is looking at.
+  const theme = usePrefersDark() ? "dark" : "light";
+  const cardUrl = `/api/quote/card?lang=${lang}&format=story&theme=${theme}`;
   const fileName = `daily-stoic-${quote.date}-${lang}.png`;
 
   // Download the image ahead of the tap. iOS only opens the share sheet while the

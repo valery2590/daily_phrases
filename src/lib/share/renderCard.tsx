@@ -17,16 +17,30 @@ export function isCardFormat(value: unknown): value is CardFormat {
   return typeof value === "string" && value in CARD_FORMATS;
 }
 
-// Same palette as valeryfigueroahuaman.com (light theme reads best once shared).
-const C = {
-  bg: "#edeff4",
-  surface: "#ffffff",
-  ink: "#131826",
-  muted: "#5a6277",
-  line: "#d8dce6",
-  accent: "#3a36e0",
-  signal: "#f2762e",
-};
+// Same palettes as valeryfigueroahuaman.com.
+const THEMES = {
+  light: {
+    bg: "#edeff4",
+    ink: "#131826",
+    muted: "#5a6277",
+    line: "#d8dce6",
+    accent: "#3a36e0",
+    signal: "#f2762e",
+  },
+  dark: {
+    bg: "#0d1120",
+    ink: "#e7eaf3",
+    muted: "#98a0b6",
+    line: "#262d44",
+    accent: "#8d89ff",
+    signal: "#ff9a55",
+  },
+} as const;
+export type CardTheme = keyof typeof THEMES;
+
+export function isCardTheme(value: unknown): value is CardTheme {
+  return value === "light" || value === "dark";
+}
 
 const LABELS: Record<Lang, { eyebrow: string; locale: string }> = {
   en: { eyebrow: "Daily Stoic", locale: "en-GB" },
@@ -69,7 +83,9 @@ export async function renderQuoteCard(
   lang: Lang,
   format: CardFormat,
   footer: string,
+  theme: CardTheme = "light",
 ): Promise<ImageResponse> {
+  const C = THEMES[theme];
   const { width, height } = CARD_FORMATS[format];
   // A missing translation falls back to English rather than an empty card.
   const text = quote.text[lang] ?? quote.text.en ?? "";
