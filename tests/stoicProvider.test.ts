@@ -25,8 +25,14 @@ describe("Stoic provider", () => {
 });
 
 describe("normalizeQuote", () => {
-  it("strips enclosed symbols appended by the upstream", () => {
-    expect(normalizeQuote({ author: "Carl Jung", quote: "Be whole, not fragmentary. ⓐ" }).text).toBe("Be whole, not fragmentary.");
+  it("strips a stray @ or @handle appended by the upstream (seen in real responses)", () => {
+    expect(normalizeQuote({ author: "x", quote: "Be whole, not fragmentary. @" }).text).toBe("Be whole, not fragmentary.");
+    expect(normalizeQuote({ author: "x", quote: "Be whole. @someone" }).text).toBe("Be whole.");
+    expect(normalizeQuote({ author: "x", quote: "Email me@home is fine" }).text).toBe("Email me@home is fine");
+  });
+
+  it("strips enclosed symbols", () => {
+    expect(normalizeQuote({ author: "x", quote: "Be whole. ⓐ" }).text).toBe("Be whole.");
   });
 
   it("splits authors written as handles, leaves normal names alone", () => {

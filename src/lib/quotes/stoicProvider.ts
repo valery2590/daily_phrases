@@ -18,12 +18,14 @@ const StoicResponse = z.object({
 
 /**
  * The upstream data is crowd-sourced and comes with artefacts seen in practice:
- * enclosed symbols appended to the text ("…fragmentary. ⓐ") and authors written
+ * a stray "@" or "@handle" appended to the text ("…fragmentary. @"), enclosed
+ * symbols (ⓐ), and authors written
  * as handles ("TheAncientSage").
  */
 export function normalizeQuote(raw: { author: string; quote: string }): SourceQuote {
   const text = raw.quote
     .replace(/[\u2460-\u24FF\u{1F100}-\u{1F1FF}]/gu, "")
+    .replace(/\s+@\w*\s*$/u, "")
     .replace(/\s+/g, " ")
     .trim();
   const author = /\s/.test(raw.author) ? raw.author : raw.author.replace(/(?<=[a-z])(?=[A-Z])/g, " ");
