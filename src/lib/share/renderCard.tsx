@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { DailyQuote, Lang } from "@/lib/quotes/types";
-import { brandHost } from "@/lib/brand";
+import { LESSON_FILE, lessonLines } from "@/lib/quotes/lesson";
+import { APP_NAME, brandHost } from "@/lib/brand";
 
 /** Sizes for the places people actually share to. */
 export const CARD_FORMATS = {
@@ -21,17 +22,21 @@ export function isCardFormat(value: unknown): value is CardFormat {
 const THEMES = {
   light: {
     bg: "#edeff4",
+    panel: "#ffffff",
     ink: "#131826",
     muted: "#5a6277",
     line: "#d8dce6",
+    cable: "#a3abc0",
     accent: "#3a36e0",
     signal: "#f2762e",
   },
   dark: {
     bg: "#0d1120",
+    panel: "#161b2d",
     ink: "#e7eaf3",
     muted: "#98a0b6",
     line: "#262d44",
+    cable: "#4a5372",
     accent: "#8d89ff",
     signal: "#ff9a55",
   },
@@ -43,25 +48,112 @@ export function isCardTheme(value: unknown): value is CardTheme {
 }
 
 const LABELS: Record<Lang, { eyebrow: string; locale: string }> = {
-  en: { eyebrow: "Daily Stoic", locale: "en-GB" },
-  es: { eyebrow: "Estoico del día", locale: "es-ES" },
-  it: { eyebrow: "Stoico del giorno", locale: "it-IT" },
+  en: { eyebrow: APP_NAME, locale: "en-GB" },
+  es: { eyebrow: APP_NAME, locale: "es-ES" },
+  it: { eyebrow: APP_NAME, locale: "it-IT" },
 };
 
 const fontDir = join(process.cwd(), "assets", "fonts");
-let fontsPromise: Promise<{ display: Buffer; body: Buffer; bodyMedium: Buffer }> | undefined;
+let fontsPromise: Promise<{ display: Buffer; body: Buffer; bodyMedium: Buffer; mono: Buffer }> | undefined;
 function loadFonts() {
   fontsPromise ??= Promise.all([
     readFile(join(fontDir, "bricolage-grotesque-latin-600-normal.woff")),
     readFile(join(fontDir, "ibm-plex-sans-latin-400-normal.woff")),
     readFile(join(fontDir, "ibm-plex-sans-latin-500-normal.woff")),
-  ]).then(([display, body, bodyMedium]) => ({ display, body, bodyMedium }));
+    readFile(join(fontDir, "jetbrains-mono-latin-500-normal.woff")),
+  ]).then(([display, body, bodyMedium, mono]) => ({ display, body, bodyMedium, mono }));
   return fontsPromise;
 }
 
-/** Long quotes get a smaller type size so they always fit the card. */
+/** The VFH symbol (three connected nodes), same geometry as the brand kit. */
+function VfhSymbol({ size, theme }: { size: number; theme: CardTheme }) {
+  const C = THEMES[theme];
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28">
+      <path
+        d="M9 14 C15 14 14 6 19 6 M9 14 C15 14 14 22 19 22"
+        stroke={C.cable}
+        strokeWidth={1.6}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <circle cx={5} cy={14} r={4} fill={C.ink} />
+      <circle cx={23} cy={6} r={4} fill={C.accent} />
+      <circle cx={23} cy={22} r={4} fill={C.signal} />
+    </svg>
+  );
+}
+
+/** The dev lesson as a tiny code editor: file tab, </> mark, numbered lines. */
+function LessonPanel({
+  lines,
+  file,
+  theme,
+  format,
+}: {
+  lines: string[];
+  file: string;
+  theme: CardTheme;
+  format: CardFormat;
+}) {
+  const C = THEMES[theme];
+  const og = format === "og";
+  const size = { story: 32, post: 28, og: 19 }[format];
+  const padX = og ? 20 : 32;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        marginTop: og ? 22 : 52,
+        background: C.panel,
+        border: `2px solid ${C.line}`,
+        borderRadius: og ? 16 : 24,
+        fontFamily: "Mono",
+        fontSize: size,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: `${og ? 8 : 16}px ${padX}px`,
+          borderBottom: `2px solid ${C.line}`,
+          fontSize: Math.round(size * 0.78),
+          color: C.muted,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: og ? 8 : 12 }}>
+          <div style={{ width: og ? 8 : 12, height: og ? 8 : 12, borderRadius: 99, background: C.signal }} />
+          <div>{file}</div>
+        </div>
+        <div style={{ color: C.signal }}>{"</>"}</div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: og ? 2 : 6,
+          padding: `${og ? 12 : 24}px ${padX}px`,
+          lineHeight: 1.4,
+        }}
+      >
+        {lines.map((line, i) => (
+          <div key={i} style={{ display: "flex" }}>
+            <div style={{ width: size * 1.6, flexShrink: 0, color: C.cable }}>{String(i + 1)}</div>
+            <div style={{ width: size * 1.9, flexShrink: 0, color: C.muted }}>{"//"}</div>
+            <div style={{ display: "flex", flex: 1, color: C.accent }}>{line}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Long quotes get a smaller type size so quote + lesson always fit the card. */
 function quoteFontSize(text: string, format: CardFormat): number {
-  const base = { story: 76, post: 64, og: 46 }[format];
+  const base = { story: 72, post: 60, og: 40 }[format];
   const len = text.length;
   if (len < 90) return base;
   if (len < 180) return Math.round(base * 0.8);
@@ -87,9 +179,7 @@ export async function renderQuoteCard(
 ): Promise<ImageResponse> {
   const C = THEMES[theme];
   const { width, height } = CARD_FORMATS[format];
-  // A missing translation falls back to English rather than an empty card.
-  const text = quote.text[lang] ?? quote.text.en ?? "";
-  const shownLang: Lang = quote.text[lang] ? lang : "en";
+  const text = quote.text[lang];
   const fonts = await loadFonts();
 
   const pad = format === "og" ? 64 : 96;
@@ -110,18 +200,23 @@ export async function renderQuoteCard(
           color: C.ink,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ width: 14, height: 14, borderRadius: 7, background: C.signal }} />
-          <div
-            style={{
-              fontSize: format === "og" ? 22 : 30,
-              fontWeight: 500,
-              letterSpacing: 3,
-              textTransform: "uppercase",
-              color: C.accent,
-            }}
-          >
-            {`${LABELS[shownLang].eyebrow} · ${formatDate(quote.date, shownLang)}`}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: format === "og" ? 14 : 18 }}>
+            <VfhSymbol size={format === "og" ? 36 : 48} theme={theme} />
+            <div
+              style={{
+                fontSize: format === "og" ? 20 : 26,
+                fontWeight: 500,
+                letterSpacing: 3,
+                textTransform: "uppercase",
+                color: C.accent,
+              }}
+            >
+              {LABELS[lang].eyebrow}
+            </div>
+          </div>
+          <div style={{ fontSize: format === "og" ? 18 : 24, color: C.muted }}>
+            {formatDate(quote.date, lang)}
           </div>
         </div>
 
@@ -149,10 +244,17 @@ export async function renderQuoteCard(
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: fontSize * 0.8 }}>
             <div style={{ width: 48, height: 4, borderRadius: 2, background: C.accent }} />
-            <div style={{ fontSize: Math.max(24, Math.round(fontSize * 0.5)), color: C.muted }}>
-              {quote.author}
+            <div style={{ fontSize: Math.max(22, Math.round(fontSize * 0.46)), color: C.muted }}>
+              {`${quote.author[lang]} · ${quote.work[lang]}`}
             </div>
           </div>
+
+          <LessonPanel
+            lines={lessonLines(quote.lesson[lang])}
+            file={LESSON_FILE[lang]}
+            theme={theme}
+            format={format}
+          />
         </div>
 
         <div
@@ -167,23 +269,6 @@ export async function renderQuoteCard(
           }}
         >
           <div>{footer}</div>
-          <div style={{ display: "flex", gap: 10 }}>
-            {(["en", "es", "it"] as const).map((l) => (
-              <div
-                key={l}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: 999,
-                  border: `2px solid ${l === shownLang ? C.accent : C.line}`,
-                  color: l === shownLang ? C.accent : C.muted,
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                {l}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     ),
@@ -194,6 +279,7 @@ export async function renderQuoteCard(
         { name: "Bricolage", data: fonts.display, weight: 600, style: "normal" },
         { name: "Plex", data: fonts.body, weight: 400, style: "normal" },
         { name: "Plex", data: fonts.bodyMedium, weight: 500, style: "normal" },
+        { name: "Mono", data: fonts.mono, weight: 500, style: "normal" },
       ],
     },
   );

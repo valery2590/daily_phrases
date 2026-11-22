@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
+import { APP_NAME, APP_SLUG } from "@/lib/brand";
+import { VfhSymbol } from "./VfhSymbol";
+import { LESSON_FILE, lessonLines } from "@/lib/quotes/lesson";
 
 type Strings = {
-  eyebrow: string;
   locale: string;
-  missing: string;
   save: string;
   copy: string;
   copied: string;
@@ -17,15 +18,11 @@ type Strings = {
   hintShare: string;
   hintDownload: string;
   preview: string;
-  fallback: string;
-  partial: string;
 };
 
 const UI: Record<Lang, Strings> = {
   en: {
-    eyebrow: "Daily Stoic",
     locale: "en-GB",
-    missing: "Translation unavailable right now. Showing the original.",
     save: "Save image",
     copy: "Copy text",
     copied: "Copied",
@@ -36,13 +33,9 @@ const UI: Record<Lang, Strings> = {
     hintShare: "Choose “Save Image” and post it from Instagram. You can also long-press the preview.",
     hintDownload: "The image is saved to your downloads.",
     preview: "Preview of the image to share",
-    fallback: "Offline quote",
-    partial: "Some translations unavailable",
   },
   es: {
-    eyebrow: "Estoico del día",
     locale: "es-ES",
-    missing: "Traducción no disponible ahora mismo. Se muestra el original.",
     save: "Guardar imagen",
     copy: "Copiar texto",
     copied: "Copiado",
@@ -53,13 +46,9 @@ const UI: Record<Lang, Strings> = {
     hintShare: "Elige «Guardar imagen» y súbela desde Instagram. También puedes mantener pulsada la vista previa.",
     hintDownload: "La imagen se guarda en tus descargas.",
     preview: "Vista previa de la imagen para compartir",
-    fallback: "Cita sin conexión",
-    partial: "Algunas traducciones no disponibles",
   },
   it: {
-    eyebrow: "Stoico del giorno",
     locale: "it-IT",
-    missing: "Traduzione non disponibile al momento. Mostro l'originale.",
     save: "Salva immagine",
     copy: "Copia testo",
     copied: "Copiato",
@@ -70,8 +59,6 @@ const UI: Record<Lang, Strings> = {
     hintShare: "Scegli «Salva immagine» e pubblicala da Instagram. Puoi anche tenere premuta l'anteprima.",
     hintDownload: "L'immagine viene salvata nei download.",
     preview: "Anteprima dell'immagine da condividere",
-    fallback: "Citazione offline",
-    partial: "Alcune traduzioni non disponibili",
   },
 };
 
@@ -187,10 +174,10 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   const [preview, setPreview] = useState<string | null>(null);
 
   const t = UI[lang];
-  const textFor = (l: Lang) => quote.text[l] ?? quote.text.en ?? "";
+  const textFor = (l: Lang) => quote.text[l];
   const text = textFor(lang);
   const cardUrl = `/api/quote/card?lang=${lang}&format=${format}&theme=${theme}`;
-  const fileName = `daily-stoic-${quote.date}-${lang}-${format}.png`;
+  const fileName = `${APP_SLUG}-${quote.date}-${lang}-${format}-${theme}.png`;
 
   // Download the image ahead of the tap. iOS only opens the share sheet while the
   // tap is "fresh"; awaiting a network request first can make the share fail.
@@ -251,21 +238,23 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   }
 
   async function copyText() {
-    await navigator.clipboard.writeText(`“${text}”\n— ${quote.author}\n${window.location.origin}`);
+    await navigator.clipboard.writeText(`“${text}”\n— ${quote.author[lang]}, ${quote.work[lang]}\n\n// ${quote.lesson[lang]}\n\n${APP_NAME} · ${window.location.origin}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }
 
-  const status =
-    quote.source === "fallback" ? t.fallback : quote.translation === "partial" ? t.partial : null;
-
   return (
     <article className="rounded-3xl border border-line bg-surface p-6 shadow-[0_1px_0_var(--line)] sm:p-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <p className="flex items-center gap-2.5 text-xs font-medium uppercase tracking-[0.18em] text-accent">
-          <span aria-hidden className="size-2 shrink-0 rounded-full bg-signal" />
-          <Crossfade active={lang} render={(l) => `${UI[l].eyebrow} · ${formatDate(quote.date, UI[l].locale)}`} />
-        </p>
+        <div className="flex items-center gap-3">
+          <VfhSymbol className="size-8 shrink-0" />
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-xs font-medium uppercase tracking-[0.18em] text-accent">{APP_NAME}</h1>
+            <p className="text-xs text-muted">
+              <Crossfade active={lang} render={(l) => formatDate(quote.date, UI[l].locale)} />
+            </p>
+          </div>
+        </div>
         <div role="tablist" aria-label="Language" className="flex gap-1 rounded-full border border-line p-1">
           {LANGS.map((l) => (
             <button
@@ -291,21 +280,47 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
           active={lang}
           className="mt-2 text-balance font-display text-2xl font-semibold leading-snug tracking-tight sm:text-3xl"
           render={(l) => (
-            <span lang={quote.text[l] === null ? "en" : l} className="block">
+            <span lang={l} className="block">
               {textFor(l)}
-              {quote.text[l] === null && (
-                <span className="mt-4 block font-sans text-sm font-normal tracking-normal text-muted">
-                  {UI[l].missing}
-                </span>
-              )}
             </span>
           )}
         />
         <footer className="mt-6 flex items-center gap-3 text-muted">
           <span aria-hidden className="h-1 w-8 rounded-full bg-accent" />
-          {quote.author}
+          <Crossfade active={lang} render={(l) => `${quote.author[l]} · ${quote.work[l]}`} />
         </footer>
       </blockquote>
+
+      <figure className="mt-8 overflow-hidden rounded-2xl border border-line bg-bg font-mono text-sm sm:text-base">
+        <figcaption className="flex items-center justify-between border-b border-line px-4 py-2 text-xs text-muted sm:px-5">
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="size-2 rounded-full bg-signal" />
+            <Crossfade active={lang} render={(l) => LESSON_FILE[l]} />
+          </span>
+          <span aria-hidden className="text-signal">
+            {"</>"}
+          </span>
+        </figcaption>
+        <Crossfade
+          active={lang}
+          className="px-4 py-4 sm:px-5"
+          render={(l) => (
+            <span lang={l} className="flex flex-col gap-1 leading-relaxed">
+              {lessonLines(quote.lesson[l]).map((line, i) => (
+                <span key={i} className="flex">
+                  <span aria-hidden className="w-6 shrink-0 select-none text-cable">
+                    {i + 1}
+                  </span>
+                  <span aria-hidden className="w-7 shrink-0 select-none text-muted">
+                    {"//"}
+                  </span>
+                  <span className="min-w-0 text-accent">{line}</span>
+                </span>
+              ))}
+            </span>
+          )}
+        />
+      </figure>
 
       <section className="mt-10 border-t border-line pt-6" aria-label={t.save}>
         <div className="flex gap-4 sm:gap-6">
@@ -363,9 +378,6 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
           >
             <Crossfade active={lang} render={(l) => (copied ? UI[l].copied : UI[l].copy)} />
           </button>
-          {status && (
-            <span className="ml-auto rounded-full border border-line px-3 py-1 text-xs text-muted">{status}</span>
-          )}
         </div>
       </section>
     </article>

@@ -7,6 +7,7 @@
   --ink: #131826;
   --muted: #5a6277;
   --line: #d8dce6;
+  --cable: #a3abc0;
   --accent: #3a36e0;
   --accent-ink: #ffffff;
   --signal: #f2762e;
@@ -20,6 +21,7 @@
     --ink: #e7eaf3;
     --muted: #98a0b6;
     --line: #262d44;
+    --cable: #4a5372;
     --accent: #8d89ff;
     --accent-ink: #0d1120;
     --signal: #ff9a55;
@@ -34,6 +36,7 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-cable: var(--cable);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-signal: var(--signal);
