@@ -22,15 +22,29 @@ function daysSinceLaunch(date: string): number {
 }
 
 /**
- * Deterministic rotation: the same date always gives the same entry, on every
+ * Deterministic rotation: entry N is shown on day N after launch, on every
  * instance and in every route (page, JSON API, share image, cron). No cache,
  * no state, no race between requests.
+ *
+ * It never wraps around: a quote is published once. Before launch, or once the
+ * catalog runs out, there is no entry (undefined) until new ones are appended.
+ * That is why entries are append-only: never reorder or remove past ones.
  */
-export function entryForDate(date: string, catalog: readonly CatalogEntry[] = CATALOG): CatalogEntry {
-  const n = catalog.length;
-  const index = ((daysSinceLaunch(date) % n) + n) % n;
-  return catalog[index];
+export function entryForDate(date: string, catalog: readonly CatalogEntry[] = CATALOG): CatalogEntry | undefined {
+  const index = daysSinceLaunch(date);
+  return index >= 0 ? catalog[index] : undefined;
 }
+
+/**
+ * Days of content left after `date` (today's entry not included). Before
+ * launch, the whole catalog is ahead. Never negative.
+ */
+export function remainingDays(date: string, catalog: readonly CatalogEntry[] = CATALOG): number {
+  const index = daysSinceLaunch(date);
+  return index < 0 ? catalog.length : Math.max(0, catalog.length - index - 1);
+}
+
+export { LOW_CONTENT_DAYS } from "./constants";
 
 function byLang(pick: (lang: Lang) => string): Record<Lang, string> {
   return Object.fromEntries(LANGS.map((l) => [l, pick(l)])) as Record<Lang, string>;
@@ -47,9 +61,21 @@ export function resolveEntry(entry: CatalogEntry, date: string): DailyQuote {
   };
 }
 
-export function getDailyQuote(now: Date = new Date()): DailyQuote {
+/** Today's quote, or null when there is no entry for today (before launch or catalog exhausted). */
+export function getDailyQuote(now: Date = new Date()): DailyQuote | null {
   const date = utcDateKey(now);
-  return resolveEntry(entryForDate(date), date);
+  const entry = entryForDate(date);
+  return entry ? resolveEntry(entry, date) : null;
+}
+
+/**
+ * The most recent entry already shown (or the first one before launch). Only for
+ * link previews, which always need an image; it is never used to publish.
+ */
+export function getLatestQuote(now: Date = new Date()): DailyQuote {
+  const date = utcDateKey(now);
+  const index = Math.min(Math.max(daysSinceLaunch(date), 0), CATALOG.length - 1);
+  return resolveEntry(CATALOG[index], date);
 }
 
 /** A specific entry by id (used to preview cards during development). */

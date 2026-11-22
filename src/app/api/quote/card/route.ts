@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
   const previewId = process.env.NODE_ENV === "production" ? null : params.get("id");
   const quote = previewId ? getQuoteById(previewId, now) : getDailyQuote(now);
   if (!quote) {
-    return NextResponse.json({ error: `Unknown id "${previewId}".` }, { status: 404 });
+    return NextResponse.json(
+      { error: previewId ? `Unknown id "${previewId}".` : "No quote for today." },
+      { status: 404, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   const image = await renderQuoteCard(quote, lang, format, shareFooter(), theme);
