@@ -180,7 +180,6 @@ export async function renderQuoteCard(
   const C = THEMES[theme];
   const { width, height } = CARD_FORMATS[format];
   const text = quote.text[lang];
-  const shownLang = lang;
   const fonts = await loadFonts();
 
   const pad = format === "og" ? 64 : 96;
@@ -213,11 +212,11 @@ export async function renderQuoteCard(
                 color: C.accent,
               }}
             >
-              {LABELS[shownLang].eyebrow}
+              {LABELS[lang].eyebrow}
             </div>
           </div>
           <div style={{ fontSize: format === "og" ? 18 : 24, color: C.muted }}>
-            {formatDate(quote.date, shownLang)}
+            {formatDate(quote.date, lang)}
           </div>
         </div>
 
@@ -270,23 +269,6 @@ export async function renderQuoteCard(
           }}
         >
           <div>{footer}</div>
-          <div style={{ display: "flex", gap: 10 }}>
-            {(["en", "es", "it"] as const).map((l) => (
-              <div
-                key={l}
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: 999,
-                  border: `2px solid ${l === shownLang ? C.accent : C.line}`,
-                  color: l === shownLang ? C.accent : C.muted,
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                {l}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     ),
