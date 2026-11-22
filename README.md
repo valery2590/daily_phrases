@@ -66,7 +66,7 @@ In development only, `/api/quote/card?id=<catalog id>` renders a specific entry,
 
 ```json
 {
-  "date": "2026-11-23",
+  "date": "2026-11-22",
   "id": "opinions-not-things",
   "author": { "en": "Epictetus", "es": "Epicteto", "it": "Epitteto" },
   "work": { "en": "Enchiridion 5", "es": "Enquiridión 5", "it": "Manuale 5" },

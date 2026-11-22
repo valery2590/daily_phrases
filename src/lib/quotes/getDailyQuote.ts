@@ -2,7 +2,7 @@ import { CATALOG, AUTHORS, WORKS, type CatalogEntry } from "./catalog";
 import { LANGS, type DailyQuote, type Lang } from "./types";
 
 /** Day the rotation starts from: on this date the catalog shows its first entry. */
-export const LAUNCH_DATE = "2026-11-23";
+export const LAUNCH_DATE = "2026-11-22";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

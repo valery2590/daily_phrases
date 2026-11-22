@@ -74,7 +74,7 @@ describe("daily rotation", () => {
 
   it("uses the UTC day, not the server's local day", () => {
     expect(utcDateKey(new Date("2026-11-23T23:30:00-05:00"))).toBe("2026-11-24");
-    expect(getDailyQuote(new Date("2026-11-23T00:00:00Z"))?.id).toBe(CATALOG[0].id);
+    expect(getDailyQuote(new Date("2026-11-22T00:00:00Z"))?.id).toBe(CATALOG[0].id);
   });
 
   it("resolves author, work and texts per language", () => {
