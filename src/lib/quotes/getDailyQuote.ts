@@ -1,50 +1,59 @@
-import "server-only";
-import { unstable_cache } from "next/cache";
-import { createStoicProvider } from "./stoicProvider";
-import { createMyMemoryTranslator } from "@/lib/translation/myMemory";
-import { buildDailyQuote, utcDateKey } from "./buildDailyQuote";
-import type { DailyQuote, Lang } from "./types";
+import { CATALOG, AUTHORS, WORKS, type CatalogEntry } from "./catalog";
+import { LANGS, type DailyQuote, type Lang } from "./types";
 
-const DAY = 60 * 60 * 24;
+/** Day the rotation starts from: on this date the catalog shows its first entry. */
+export const LAUNCH_DATE = "2026-11-23";
 
-const provider = createStoicProvider();
-const translator = createMyMemoryTranslator();
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Caching:
- * - the upstream quote is cached once per UTC day by Next's fetch cache
- *   (see stoicProvider: the URL carries the date);
- * - each translation is cached per text + language. Only successes are stored
- *   (unstable_cache does not keep a thrown error), so that is about 2 MyMemory
- *   calls a day, far below its free quota, and a failed translation is retried
- *   on the next request instead of being stuck for days.
- * A fallback quote is never cached, so the page goes back to live as soon as
- * the upstream recovers.
- */
+/** UTC calendar day, so every server instance agrees on what "today" is. */
+export function utcDateKey(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
 
-const cachedTranslation = unstable_cache(
-  (text: string, to: Lang) => translator.translate(text, "en", to),
-  ["translation-v1"],
-  { revalidate: DAY * 7 },
-);
+/** Seconds until the next UTC midnight, when the quote changes. Used for cache headers. */
+export function secondsUntilNextDay(now: Date = new Date()): number {
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
+}
+
+function daysSinceLaunch(date: string): number {
+  return Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${LAUNCH_DATE}T00:00:00Z`)) / DAY_MS);
+}
 
 /**
- * The upstream returns a *random* quote on every call, so two cache misses at the
- * same time would cache two different "quotes of the day" (page and share image
- * would disagree). Concurrent callers on this instance share one in-flight request.
+ * Deterministic rotation: the same date always gives the same entry, on every
+ * instance and in every route (page, JSON API, share image, cron). No cache,
+ * no state, no race between requests.
  */
-const inflight = new Map<string, Promise<DailyQuote>>();
+export function entryForDate(date: string, catalog: readonly CatalogEntry[] = CATALOG): CatalogEntry {
+  const n = catalog.length;
+  const index = ((daysSinceLaunch(date) % n) + n) % n;
+  return catalog[index];
+}
 
-export function getDailyQuote(now: Date = new Date()): Promise<DailyQuote> {
+function byLang(pick: (lang: Lang) => string): Record<Lang, string> {
+  return Object.fromEntries(LANGS.map((l) => [l, pick(l)])) as Record<Lang, string>;
+}
+
+export function resolveEntry(entry: CatalogEntry, date: string): DailyQuote {
+  return {
+    date,
+    id: entry.id,
+    author: { ...AUTHORS[entry.author] },
+    work: byLang((l) => [WORKS[entry.work][l], entry.ref].filter(Boolean).join(" ")),
+    text: { ...entry.quote },
+    lesson: { ...entry.lesson },
+  };
+}
+
+export function getDailyQuote(now: Date = new Date()): DailyQuote {
   const date = utcDateKey(now);
-  const pending = inflight.get(date);
-  if (pending) return pending;
+  return resolveEntry(entryForDate(date), date);
+}
 
-  const promise = buildDailyQuote(date, {
-    fetchSource: (d) => provider.fetchQuote(d),
-    translate: cachedTranslation,
-  }).finally(() => inflight.delete(date));
-
-  inflight.set(date, promise);
-  return promise;
+/** A specific entry by id (used to preview cards during development). */
+export function getQuoteById(id: string, now: Date = new Date()): DailyQuote | undefined {
+  const entry = CATALOG.find((e) => e.id === id);
+  return entry && resolveEntry(entry, utcDateKey(now));
 }

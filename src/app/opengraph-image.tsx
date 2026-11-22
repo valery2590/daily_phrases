@@ -9,6 +9,6 @@ export const contentType = "image/png";
 
 export default async function OpengraphImage() {
   await connection();
-  const quote = await getDailyQuote();
+  const quote = getDailyQuote();
   return renderQuoteCard(quote, "en", "og", shareFooter());
 }

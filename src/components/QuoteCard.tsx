@@ -6,7 +6,6 @@ import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
 type Strings = {
   eyebrow: string;
   locale: string;
-  missing: string;
   save: string;
   copy: string;
   copied: string;
@@ -17,15 +16,12 @@ type Strings = {
   hintShare: string;
   hintDownload: string;
   preview: string;
-  fallback: string;
-  partial: string;
 };
 
 const UI: Record<Lang, Strings> = {
   en: {
     eyebrow: "Daily Stoic",
     locale: "en-GB",
-    missing: "Translation unavailable right now. Showing the original.",
     save: "Save image",
     copy: "Copy text",
     copied: "Copied",
@@ -36,13 +32,10 @@ const UI: Record<Lang, Strings> = {
     hintShare: "Choose “Save Image” and post it from Instagram. You can also long-press the preview.",
     hintDownload: "The image is saved to your downloads.",
     preview: "Preview of the image to share",
-    fallback: "Offline quote",
-    partial: "Some translations unavailable",
   },
   es: {
     eyebrow: "Estoico del día",
     locale: "es-ES",
-    missing: "Traducción no disponible ahora mismo. Se muestra el original.",
     save: "Guardar imagen",
     copy: "Copiar texto",
     copied: "Copiado",
@@ -53,13 +46,10 @@ const UI: Record<Lang, Strings> = {
     hintShare: "Elige «Guardar imagen» y súbela desde Instagram. También puedes mantener pulsada la vista previa.",
     hintDownload: "La imagen se guarda en tus descargas.",
     preview: "Vista previa de la imagen para compartir",
-    fallback: "Cita sin conexión",
-    partial: "Algunas traducciones no disponibles",
   },
   it: {
     eyebrow: "Stoico del giorno",
     locale: "it-IT",
-    missing: "Traduzione non disponibile al momento. Mostro l'originale.",
     save: "Salva immagine",
     copy: "Copia testo",
     copied: "Copiato",
@@ -70,8 +60,6 @@ const UI: Record<Lang, Strings> = {
     hintShare: "Scegli «Salva immagine» e pubblicala da Instagram. Puoi anche tenere premuta l'anteprima.",
     hintDownload: "L'immagine viene salvata nei download.",
     preview: "Anteprima dell'immagine da condividere",
-    fallback: "Citazione offline",
-    partial: "Alcune traduzioni non disponibili",
   },
 };
 
@@ -187,7 +175,7 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   const [preview, setPreview] = useState<string | null>(null);
 
   const t = UI[lang];
-  const textFor = (l: Lang) => quote.text[l] ?? quote.text.en ?? "";
+  const textFor = (l: Lang) => quote.text[l];
   const text = textFor(lang);
   const cardUrl = `/api/quote/card?lang=${lang}&format=${format}&theme=${theme}`;
   const fileName = `daily-stoic-${quote.date}-${lang}-${format}.png`;
@@ -251,13 +239,10 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   }
 
   async function copyText() {
-    await navigator.clipboard.writeText(`“${text}”\n— ${quote.author}\n${window.location.origin}`);
+    await navigator.clipboard.writeText(`“${text}”\n— ${quote.author[lang]}\n${window.location.origin}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }
-
-  const status =
-    quote.source === "fallback" ? t.fallback : quote.translation === "partial" ? t.partial : null;
 
   return (
     <article className="rounded-3xl border border-line bg-surface p-6 shadow-[0_1px_0_var(--line)] sm:p-10">
@@ -291,19 +276,14 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
           active={lang}
           className="mt-2 text-balance font-display text-2xl font-semibold leading-snug tracking-tight sm:text-3xl"
           render={(l) => (
-            <span lang={quote.text[l] === null ? "en" : l} className="block">
+            <span lang={l} className="block">
               {textFor(l)}
-              {quote.text[l] === null && (
-                <span className="mt-4 block font-sans text-sm font-normal tracking-normal text-muted">
-                  {UI[l].missing}
-                </span>
-              )}
             </span>
           )}
         />
         <footer className="mt-6 flex items-center gap-3 text-muted">
           <span aria-hidden className="h-1 w-8 rounded-full bg-accent" />
-          {quote.author}
+          <Crossfade active={lang} render={(l) => quote.author[l]} />
         </footer>
       </blockquote>
 
@@ -363,9 +343,6 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
           >
             <Crossfade active={lang} render={(l) => (copied ? UI[l].copied : UI[l].copy)} />
           </button>
-          {status && (
-            <span className="ml-auto rounded-full border border-line px-3 py-1 text-xs text-muted">{status}</span>
-          )}
         </div>
       </section>
     </article>

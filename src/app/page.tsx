@@ -4,10 +4,10 @@ import { QuoteCard } from "@/components/QuoteCard";
 import { BRAND } from "@/lib/brand";
 
 export default async function Home() {
-  // Rendered per request on purpose: the data is cached (see getDailyQuote), and a
-  // build-time prerender would fetch its own random quote and disagree with the API.
+  // Rendered per request so the quote switches exactly at UTC midnight. It is cheap:
+  // the quote comes from the in-repo catalog, with no network calls.
   await connection();
-  const quote = await getDailyQuote();
+  const quote = getDailyQuote();
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-4 py-12 sm:px-6">
@@ -25,8 +25,7 @@ export default async function Home() {
           </a>
         </div>
         <span className="text-xs">
-          Quotes: <a className="underline decoration-line underline-offset-4 hover:text-ink" href="https://stoic.tekloon.net">Stoic Quote API</a>
-          {" · "}Translation: <a className="underline decoration-line underline-offset-4 hover:text-ink" href="https://mymemory.translated.net">MyMemory</a>
+          Quotes from public-domain works by Epictetus, Marcus Aurelius and Seneca.
         </span>
       </footer>
     </main>

@@ -87,9 +87,8 @@ export async function renderQuoteCard(
 ): Promise<ImageResponse> {
   const C = THEMES[theme];
   const { width, height } = CARD_FORMATS[format];
-  // A missing translation falls back to English rather than an empty card.
-  const text = quote.text[lang] ?? quote.text.en ?? "";
-  const shownLang: Lang = quote.text[lang] ? lang : "en";
+  const text = quote.text[lang];
+  const shownLang = lang;
   const fonts = await loadFonts();
 
   const pad = format === "og" ? 64 : 96;
@@ -150,7 +149,7 @@ export async function renderQuoteCard(
           <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: fontSize * 0.8 }}>
             <div style={{ width: 48, height: 4, borderRadius: 2, background: C.accent }} />
             <div style={{ fontSize: Math.max(24, Math.round(fontSize * 0.5)), color: C.muted }}>
-              {quote.author}
+              {quote.author[lang]}
             </div>
           </div>
         </div>

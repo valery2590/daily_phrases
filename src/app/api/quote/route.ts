@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getDailyQuote } from "@/lib/quotes/getDailyQuote";
+import { getDailyQuote, secondsUntilNextDay } from "@/lib/quotes/getDailyQuote";
 import { isLang, LANGS } from "@/lib/quotes/types";
 
 /**
- * GET /api/quote            → today's quote in every language
- * GET /api/quote?lang=it    → today's quote in one language
+ * GET /api/quote            → today's quote + dev lesson in every language
+ * GET /api/quote?lang=it    → the same, in one language
  */
 export async function GET(request: NextRequest) {
   const lang = request.nextUrl.searchParams.get("lang");
@@ -16,25 +16,22 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const quote = await getDailyQuote();
+  const now = new Date();
+  const quote = getDailyQuote(now);
   const body = lang
     ? {
         date: quote.date,
+        id: quote.id,
         lang,
-        author: quote.author,
+        author: quote.author[lang],
+        work: quote.work[lang],
         text: quote.text[lang],
-        source: quote.source,
-        translation: quote.text[lang] === null ? "unavailable" : "ok",
+        lesson: quote.lesson[lang],
       }
     : quote;
 
   return NextResponse.json(body, {
-    headers: {
-      // Shared caches (CDN) keep it for an hour; a fallback is cached briefly so we recover fast.
-      "Cache-Control":
-        quote.source === "live"
-          ? "public, s-maxage=3600, stale-while-revalidate=86400"
-          : "public, s-maxage=60",
-    },
+    // The quote is fixed for the whole UTC day: shared caches keep it until midnight.
+    headers: { "Cache-Control": `public, s-maxage=${secondsUntilNextDay(now)}` },
   });
 }
