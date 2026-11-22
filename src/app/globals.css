@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
+/* Palette taken from valeryfigueroahuaman.com so the project reads as part of the same brand. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #edeff4;
+  --surface: #ffffff;
+  --ink: #131826;
+  --muted: #5a6277;
+  --line: #d8dce6;
+  --accent: #3a36e0;
+  --accent-ink: #ffffff;
+  --signal: #f2762e;
+  --ok: #1f9d63;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0d1120;
+    --surface: #161b2d;
+    --ink: #e7eaf3;
+    --muted: #98a0b6;
+    --line: #262d44;
+    --accent: #8d89ff;
+    --accent-ink: #0d1120;
+    --signal: #ff9a55;
+    --ok: #3dd68c;
+    color-scheme: dark;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-signal: var(--signal);
+  --color-ok: var(--ok);
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-plex);
+  --font-mono: var(--font-jetbrains);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-plex), system-ui, sans-serif;
 }
