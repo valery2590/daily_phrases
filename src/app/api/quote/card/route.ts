@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   const image = await renderQuoteCard(quote, lang, format, shareFooter(), theme);
 
-  // The quote is fixed for the whole UTC day: shared caches keep the image until midnight.
+  // The quote is fixed for the whole day (Madrid time): shared caches keep the image until midnight.
   image.headers.set("Cache-Control", previewId ? "no-store" : `public, s-maxage=${secondsUntilNextDay(now)}`);
   image.headers.set("Content-Disposition", `inline; filename="${APP_SLUG}-${quote.date}-${lang}-${format}-${theme}.png"`);
   return image;

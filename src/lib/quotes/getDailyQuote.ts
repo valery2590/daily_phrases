@@ -6,14 +6,43 @@ export const LAUNCH_DATE = "2026-11-22";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** UTC calendar day, so every server instance agrees on what "today" is. */
-export function utcDateKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
+/**
+ * The day changes at midnight in this time zone, for the author and the
+ * audience (Spain, Italy), wherever the server runs. Daylight saving included.
+ */
+export const TIME_ZONE = "Europe/Madrid";
+
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Calendar day in TIME_ZONE as YYYY-MM-DD, so every server instance agrees on what "today" is. */
+export function dateKey(now: Date = new Date()): string {
+  return dayFormatter.format(now);
 }
 
-/** Seconds until the next UTC midnight, when the quote changes. Used for cache headers. */
+const offsetFormatter = new Intl.DateTimeFormat("en-US", { timeZone: TIME_ZONE, timeZoneName: "longOffset" });
+
+/** UTC offset of TIME_ZONE at a given instant, in ms (e.g. +1 h in winter, +2 h in summer). */
+function offsetMs(at: number): number {
+  const name = offsetFormatter.formatToParts(at).find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+  const match = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
+  if (!match) return 0;
+  const sign = match[1] === "-" ? -1 : 1;
+  return sign * (Number(match[2]) * 60 + Number(match[3])) * 60_000;
+}
+
+/** Seconds until the next midnight in TIME_ZONE, when the quote changes. Used for cache headers. */
 export function secondsUntilNextDay(now: Date = new Date()): number {
-  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  const [y, m, d] = dateKey(now).split("-").map(Number);
+  const midnightAsUtc = Date.UTC(y, m - 1, d + 1);
+  // Local midnight = that wall-clock time minus the zone's offset. Use the offset
+  // valid at midnight itself (it can differ from now's on a DST change day).
+  const guess = midnightAsUtc - offsetMs(now.getTime());
+  const next = midnightAsUtc - offsetMs(guess);
   return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
 }
 
@@ -76,12 +105,12 @@ export function resolveEntry(entry: CatalogEntry, date: string): DailyQuote {
 }
 
 export function getDailyQuote(now: Date = new Date()): DailyQuote {
-  const date = utcDateKey(now);
+  const date = dateKey(now);
   return resolveEntry(entryForDate(date), date);
 }
 
 /** A specific entry by id (used to preview cards during development). */
 export function getQuoteById(id: string, now: Date = new Date()): DailyQuote | undefined {
   const entry = CATALOG.find((e) => e.id === id);
-  return entry && resolveEntry(entry, utcDateKey(now));
+  return entry && resolveEntry(entry, dateKey(now));
 }

@@ -11,7 +11,7 @@
 L'idea di fondo è la dicotomia del controllo applicata alle integrazioni: non controlli se l'API dall'altra parte cade; controlli i retry, l'idempotenza, gli alert e come reagisci. Il nome è un nome proprio e resta in spagnolo.
 
 - **Catalogo curato**: ogni citazione è attribuibile a un'opera precisa e la sua lezione è scritta per lei. Tutto è tradotto a mano, senza traduzione automatica.
-- **Ordine casuale ma stabile per data UTC**: il catalogo viene rimescolato a ogni ciclo e nessuna citazione si ripete finché non sono uscite tutte; la stessa data dà sempre la stessa voce. Pagina, API e immagine coincidono senza cache né stato.
+- **Ordine casuale ma stabile per data (ora di Madrid)**: il catalogo viene rimescolato a ogni ciclo e nessuna citazione si ripete finché non sono uscite tutte; la stessa data dà sempre la stessa voce. Pagina, API e immagine coincidono senza cache né stato.
 - **Limiti di lunghezza verificati dai test**, così citazione e lezione stanno sempre nella card.
 - **`fetchWithRetry`** (timeout, retry selettivi, backoff, `Retry-After`) resta pronto per la futura pubblicazione automatica su Instagram.
 
