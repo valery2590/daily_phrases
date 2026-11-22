@@ -1,7 +1,7 @@
 import { CATALOG, AUTHORS, WORKS, type CatalogEntry } from "./catalog";
 import { LANGS, type DailyQuote, type Lang } from "./types";
 
-/** Day the rotation starts from: on this date the catalog shows its first entry. */
+/** Day 0 of the rotation: cycles of the shuffled catalog are counted from here. */
 export const LAUNCH_DATE = "2026-11-22";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -21,30 +21,44 @@ function daysSinceLaunch(date: string): number {
   return Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${LAUNCH_DATE}T00:00:00Z`)) / DAY_MS);
 }
 
-/**
- * Deterministic rotation: entry N is shown on day N after launch, on every
- * instance and in every route (page, JSON API, share image, cron). No cache,
- * no state, no race between requests.
- *
- * It never wraps around: a quote is published once. Before launch, or once the
- * catalog runs out, there is no entry (undefined) until new ones are appended.
- * That is why entries are append-only: never reorder or remove past ones.
- */
-export function entryForDate(date: string, catalog: readonly CatalogEntry[] = CATALOG): CatalogEntry | undefined {
-  const index = daysSinceLaunch(date);
-  return index >= 0 ? catalog[index] : undefined;
+/** Small, fast seeded PRNG (mulberry32): same seed, same sequence, on every instance. */
+function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Fisher–Yates shuffle of 0..n-1 driven by a seed. */
+function shuffledOrder(n: number, seed: number): number[] {
+  const order = Array.from({ length: n }, (_, i) => i);
+  const random = seededRandom(seed);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
 }
 
 /**
- * Days of content left after `date` (today's entry not included). Before
- * launch, the whole catalog is ahead. Never negative.
+ * Random but deterministic rotation. The catalog is shuffled once per cycle
+ * (a cycle = as many days as entries) with the cycle number as seed, so:
+ * - the order looks random, and changes every cycle;
+ * - within a cycle no quote repeats; every entry shows once before reshuffling;
+ * - the same date always gives the same entry, on every instance and in every
+ *   route (page, JSON API, share image), with no cache or stored state.
  */
-export function remainingDays(date: string, catalog: readonly CatalogEntry[] = CATALOG): number {
-  const index = daysSinceLaunch(date);
-  return index < 0 ? catalog.length : Math.max(0, catalog.length - index - 1);
+export function entryForDate(date: string, catalog: readonly CatalogEntry[] = CATALOG): CatalogEntry {
+  const n = catalog.length;
+  const day = daysSinceLaunch(date);
+  const cycle = Math.floor(day / n);
+  const position = ((day % n) + n) % n;
+  return catalog[shuffledOrder(n, cycle)[position]];
 }
-
-export { LOW_CONTENT_DAYS } from "./constants";
 
 function byLang(pick: (lang: Lang) => string): Record<Lang, string> {
   return Object.fromEntries(LANGS.map((l) => [l, pick(l)])) as Record<Lang, string>;
@@ -61,21 +75,9 @@ export function resolveEntry(entry: CatalogEntry, date: string): DailyQuote {
   };
 }
 
-/** Today's quote, or null when there is no entry for today (before launch or catalog exhausted). */
-export function getDailyQuote(now: Date = new Date()): DailyQuote | null {
+export function getDailyQuote(now: Date = new Date()): DailyQuote {
   const date = utcDateKey(now);
-  const entry = entryForDate(date);
-  return entry ? resolveEntry(entry, date) : null;
-}
-
-/**
- * The most recent entry already shown (or the first one before launch). Only for
- * link previews, which always need an image; it is never used to publish.
- */
-export function getLatestQuote(now: Date = new Date()): DailyQuote {
-  const date = utcDateKey(now);
-  const index = Math.min(Math.max(daysSinceLaunch(date), 0), CATALOG.length - 1);
-  return resolveEntry(CATALOG[index], date);
+  return resolveEntry(entryForDate(date), date);
 }
 
 /** A specific entry by id (used to preview cards during development). */

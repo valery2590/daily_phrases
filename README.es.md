@@ -11,7 +11,7 @@
 La idea de fondo es la dicotomía del control aplicada a las integraciones: no controlas si la API del otro lado se cae; sí controlas los reintentos, la idempotencia, las alertas y cómo reaccionas.
 
 - **Catálogo curado**: cada cita es atribuible a una obra concreta y su lección está escrita para ella. Todo está traducido a mano, sin traducción automática.
-- **Rotación determinista por fecha UTC, sin repetir nunca**: la misma fecha da siempre la misma entrada. La página, la API y la imagen coinciden sin caché ni estado. Cuando se acaba el catálogo no vuelve a empezar: la app avisa de cuántos días de contenido quedan.
+- **Orden aleatorio pero estable por fecha UTC**: el catálogo se baraja en cada ciclo y no se repite ninguna cita hasta que han salido todas; la misma fecha da siempre la misma entrada. La página, la API y la imagen coinciden sin caché ni estado.
 - **Límites de longitud comprobados en los tests**, para que la cita y la lección siempre quepan en la tarjeta.
 - **`fetchWithRetry`** (timeout, reintentos selectivos, backoff, `Retry-After`) queda listo para la futura publicación automática en Instagram.
 

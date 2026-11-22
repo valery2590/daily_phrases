@@ -3,10 +3,8 @@ import { AUTHORS, CATALOG, WORKS } from "@/lib/quotes/catalog";
 import {
   entryForDate,
   getDailyQuote,
-  getLatestQuote,
   getQuoteById,
   LAUNCH_DATE,
-  remainingDays,
   secondsUntilNextDay,
   utcDateKey,
 } from "@/lib/quotes/getDailyQuote";
@@ -43,43 +41,39 @@ describe("catalog", () => {
 });
 
 describe("daily rotation", () => {
-  it("starts with the first entry on launch day", () => {
-    expect(entryForDate(LAUNCH_DATE)).toBe(CATALOG[0]);
-    expect(entryForDate(addDays(LAUNCH_DATE, 1))).toBe(CATALOG[1]);
+  const cycle = (from: number) =>
+    Array.from({ length: CATALOG.length }, (_, d) => entryForDate(addDays(LAUNCH_DATE, from + d)).id);
+
+  it("is deterministic: the same date always gives the same entry", () => {
+    expect(entryForDate("2027-03-14")).toBe(entryForDate("2027-03-14"));
+    expect(cycle(0)).toEqual(cycle(0));
   });
 
-  it("shows every entry exactly once and never wraps around", () => {
-    const seen = new Set<string>();
-    for (let d = 0; d < CATALOG.length; d++) seen.add(entryForDate(addDays(LAUNCH_DATE, d))!.id);
-    expect(seen.size).toBe(CATALOG.length);
-    expect(entryForDate(addDays(LAUNCH_DATE, CATALOG.length))).toBeUndefined();
-    expect(getDailyQuote(new Date(`${addDays(LAUNCH_DATE, CATALOG.length)}T08:00:00Z`))).toBeNull();
+  it("shows every entry once per cycle, in a shuffled order", () => {
+    const first = cycle(0);
+    expect(new Set(first).size).toBe(CATALOG.length);
+    expect(first).not.toEqual(CATALOG.map((e) => e.id));
   });
 
-  it("has no entry before launch", () => {
-    expect(entryForDate(addDays(LAUNCH_DATE, -1))).toBeUndefined();
+  it("reshuffles every cycle", () => {
+    const second = cycle(CATALOG.length);
+    expect(new Set(second).size).toBe(CATALOG.length);
+    expect(second).not.toEqual(cycle(0));
   });
 
-  it("counts the days of content left", () => {
-    expect(remainingDays(addDays(LAUNCH_DATE, -3))).toBe(CATALOG.length);
-    expect(remainingDays(LAUNCH_DATE)).toBe(CATALOG.length - 1);
-    expect(remainingDays(addDays(LAUNCH_DATE, CATALOG.length - 1))).toBe(0);
-    expect(remainingDays(addDays(LAUNCH_DATE, CATALOG.length + 5))).toBe(0);
-  });
-
-  it("still gives link previews an image when there is no entry today", () => {
-    expect(getLatestQuote(new Date(`${addDays(LAUNCH_DATE, -1)}T08:00:00Z`)).id).toBe(CATALOG[0].id);
-    expect(getLatestQuote(new Date(`${addDays(LAUNCH_DATE, 999)}T08:00:00Z`)).id).toBe(CATALOG.at(-1)!.id);
+  it("also works for dates before launch", () => {
+    const before = cycle(-CATALOG.length);
+    expect(new Set(before).size).toBe(CATALOG.length);
   });
 
   it("uses the UTC day, not the server's local day", () => {
     expect(utcDateKey(new Date("2026-11-23T23:30:00-05:00"))).toBe("2026-11-24");
-    expect(getDailyQuote(new Date("2026-11-22T00:00:00Z"))?.id).toBe(CATALOG[0].id);
+    expect(getDailyQuote(new Date("2026-11-22T00:00:00Z")).id).toBe(entryForDate("2026-11-22").id);
   });
 
   it("resolves author, work and texts per language", () => {
-    const q = getDailyQuote(new Date(`${LAUNCH_DATE}T08:00:00Z`))!;
-    expect(q).toMatchObject({ date: LAUNCH_DATE, id: CATALOG[0].id });
+    const entry = CATALOG.find((e) => e.id === "opinions-not-things")!;
+    const q = getQuoteById(entry.id)!;
     expect(q.author.es).toBe("Epicteto");
     expect(q.work.en).toBe("Enchiridion 5");
     expect(q.lesson.es).toContain("plan de reintentos");

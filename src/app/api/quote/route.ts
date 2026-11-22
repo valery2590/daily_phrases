@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getDailyQuote, secondsUntilNextDay, utcDateKey } from "@/lib/quotes/getDailyQuote";
+import { getDailyQuote, secondsUntilNextDay } from "@/lib/quotes/getDailyQuote";
 import { isLang, LANGS } from "@/lib/quotes/types";
 
 /**
@@ -18,13 +18,6 @@ export async function GET(request: NextRequest) {
 
   const now = new Date();
   const quote = getDailyQuote(now);
-  if (!quote) {
-    // Quotes are never repeated: before launch or once the catalog runs out, there is none.
-    return NextResponse.json(
-      { error: "No quote for today.", date: utcDateKey(now) },
-      { status: 404, headers: { "Cache-Control": "public, s-maxage=60" } },
-    );
-  }
   const body = lang
     ? {
         date: quote.date,

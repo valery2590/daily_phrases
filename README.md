@@ -22,7 +22,7 @@ flowchart LR
 ```
 
 1. **Catalog**: `src/lib/quotes/catalog.ts` holds every entry: a quote attributable to a specific work, plus a dev lesson, both written and translated by hand.
-2. **Daily rotation**: entry N is shown on day N after launch (UTC). The same date always gives the same entry on every server instance, so the page, the JSON API, the share image and any future automation agree without caches, shared state or race conditions. **A quote is never repeated**: when the catalog runs out, the page says there is no new quote, the API answers 404, and the app shows how many days of content are left (highlighted below 7).
+2. **Daily rotation**: the catalog is shuffled once per cycle (as many days as entries) with a seeded random generator, and the UTC date picks the position in that order. The order looks random, no quote repeats within a cycle, and the same date always gives the same entry on every server instance, so the page, the JSON API, the share image and any future automation agree without caches, shared state or race conditions.
 3. **Sharing**: `/api/quote/card` renders the quote and the lesson as a PNG (story, feed post or link preview) with `next/og`, in the brand's colours, fonts and symbol. On mobile, the share button opens the native share sheet.
 
 ## Design decisions
@@ -30,7 +30,7 @@ flowchart LR
 | Decision | Why |
 |---|---|
 | **Curated catalog instead of a quote API** | Each lesson is written for its quote, so the quote must be known in advance. Hand-written translations also avoid machine-translation artefacts and dubious attributions from crowd-sourced APIs. |
-| **Deterministic rotation by UTC date, no wrap-around** | No storage and no "quote of the day" to keep in sync: the date *is* the key. Every route agrees by construction, and a published quote never comes back. |
+| **Seeded random rotation by UTC date** | Random-looking order with no storage: the date *is* the key, so every route agrees by construction, and every entry shows once before the catalog is reshuffled. |
 | **Length limits checked by tests** (quote ≤ 170, lesson ≤ 110 characters per language) | Both always fit the share card; a too-long entry fails CI instead of overflowing an image. |
 | **Cache until UTC midnight** | The content is fixed for the day, so shared caches can keep it exactly until it changes. |
 | **`fetchWithRetry` kept** (timeout per attempt, retries only network errors/timeouts/429/5xx, backoff with jitter, `Retry-After`) | Ready for the upcoming Instagram auto-post, which calls the Meta API. |
@@ -50,12 +50,12 @@ Add an object to `CATALOG` in `src/lib/quotes/catalog.ts`:
 }
 ```
 
-Rules: the quote must be attributable to a specific work; lessons are generic patterns of the craft (never stories from real projects); `npm test` checks completeness and length. **The catalog is append-only**: add new entries at the end and never reorder or remove existing ones, or a quote already shown could come back on a later day.
+Rules: the quote must be attributable to a specific work; lessons are generic patterns of the craft (never stories from real projects); `npm test` checks completeness and length. Adding an entry reshuffles the order from that day on; nothing is stored per day, so nothing breaks.
 
 ## API
 
 ```
-GET /api/quote                       → today's quote + lesson in every language (404 if there is none)
+GET /api/quote                       → today's quote + lesson in every language
 GET /api/quote?lang=es               → one language (en | es | it)
 GET /api/quote/card?lang=it&format=story&theme=dark
                                      → PNG: story 1080×1920 · post 1080×1350 · og 1200×630

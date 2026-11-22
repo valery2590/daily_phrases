@@ -5,7 +5,6 @@ import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
 import { APP_NAME, APP_SLUG } from "@/lib/brand";
 import { VfhSymbol } from "./VfhSymbol";
 import { LESSON_FILE, lessonLines } from "@/lib/quotes/lesson";
-import { LOW_CONTENT_DAYS } from "@/lib/quotes/constants";
 
 type Strings = {
   locale: string;
@@ -18,7 +17,6 @@ type Strings = {
   dark: string;
   hintShare: string;
   hintDownload: string;
-  left: (days: number) => string;
   preview: string;
 };
 
@@ -34,7 +32,6 @@ const UI: Record<Lang, Strings> = {
     dark: "Dark",
     hintShare: "Choose “Save Image” and post it from Instagram. You can also long-press the preview.",
     hintDownload: "The image is saved to your downloads.",
-    left: (n) => (n === 1 ? "1 day of content left" : `${n} days of content left`),
     preview: "Preview of the image to share",
   },
   es: {
@@ -48,7 +45,6 @@ const UI: Record<Lang, Strings> = {
     dark: "Oscuro",
     hintShare: "Elige «Guardar imagen» y súbela desde Instagram. También puedes mantener pulsada la vista previa.",
     hintDownload: "La imagen se guarda en tus descargas.",
-    left: (n) => (n === 1 ? "Queda 1 día de contenido" : `Quedan ${n} días de contenido`),
     preview: "Vista previa de la imagen para compartir",
   },
   it: {
@@ -62,7 +58,6 @@ const UI: Record<Lang, Strings> = {
     dark: "Scuro",
     hintShare: "Scegli «Salva immagine» e pubblicala da Instagram. Puoi anche tenere premuta l'anteprima.",
     hintDownload: "L'immagine viene salvata nei download.",
-    left: (n) => (n === 1 ? "Resta 1 giorno di contenuti" : `Restano ${n} giorni di contenuti`),
     preview: "Anteprima dell'immagine da condividere",
   },
 };
@@ -166,7 +161,7 @@ function Crossfade({
   );
 }
 
-export function QuoteCard({ quote, remaining }: { quote: DailyQuote; remaining: number }) {
+export function QuoteCard({ quote }: { quote: DailyQuote }) {
   const [lang, setLang] = useState<Lang>("en");
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -383,13 +378,6 @@ export function QuoteCard({ quote, remaining }: { quote: DailyQuote; remaining: 
           >
             <Crossfade active={lang} render={(l) => (copied ? UI[l].copied : UI[l].copy)} />
           </button>
-          <span
-            className={`ml-auto rounded-full border px-3 py-1 text-xs ${
-              remaining < LOW_CONTENT_DAYS ? "border-signal text-signal" : "border-line text-muted"
-            }`}
-          >
-            <Crossfade active={lang} render={(l) => UI[l].left(remaining)} />
-          </span>
         </div>
       </section>
     </article>
