@@ -75,7 +75,8 @@ No API keys needed. Optional environment variables:
 | Variable | Use |
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | Public URL, for link previews (`og:image`). |
-| `SHARE_FOOTER` | Text at the bottom of the share image. Defaults to the site's host. |
+| `NEXT_PUBLIC_BRAND_NAME`, `NEXT_PUBLIC_BRAND_URL` | Who signs the page and the images (defaults in `src/lib/brand.ts`). |
+| `SHARE_FOOTER` | Text at the bottom of the share image. Defaults to the brand URL's host. |
 | `STOIC_API_URL`, `MYMEMORY_API_URL` | Point to another endpoint, e.g. an unreachable one to try the fallback. |
 
 ## Quality

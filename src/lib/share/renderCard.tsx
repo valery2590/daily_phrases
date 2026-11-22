@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { DailyQuote, Lang } from "@/lib/quotes/types";
+import { brandHost } from "@/lib/brand";
 
 /** Sizes for the places people actually share to. */
 export const CARD_FORMATS = {
@@ -182,12 +183,7 @@ export async function renderQuoteCard(
   );
 }
 
-/** Text shown at the bottom of the card: the site's host by default. */
+/** Text shown at the bottom of the card: the author's site by default. */
 export function shareFooter(): string {
-  if (process.env.SHARE_FOOTER) return process.env.SHARE_FOOTER;
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "").host || "Daily Stoic";
-  } catch {
-    return "Daily Stoic";
-  }
+  return process.env.SHARE_FOOTER ?? brandHost;
 }
