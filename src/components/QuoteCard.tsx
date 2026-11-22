@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
 
 const UI: Record<Lang, { eyebrow: string; locale: string; missing: string; share: string; copy: string; copied: string; download: string; fallback: string; partial: string }> = {
@@ -87,17 +87,35 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   const cardUrl = `/api/quote/card?lang=${lang}&format=story`;
   const fileName = `daily-stoic-${quote.date}-${lang}.png`;
 
-  async function shareImage() {
-    setBusy(true);
-    try {
-      const blob = await fetch(cardUrl).then((r) => {
+  // Download the image ahead of the tap. iOS only opens the share sheet while the
+  // tap is "fresh"; awaiting a network request first can make the share fail.
+  const images = useRef(new Map<string, Promise<Blob>>());
+  const loadImage = (url: string) => {
+    let pending = images.current.get(url);
+    if (!pending) {
+      pending = fetch(url).then((r) => {
         if (!r.ok) throw new Error(`card ${r.status}`);
         return r.blob();
       });
+      pending.catch(() => images.current.delete(url));
+      images.current.set(url, pending);
+    }
+    return pending;
+  };
+  useEffect(() => {
+    loadImage(cardUrl).catch(() => {});
+  }, [cardUrl]);
+
+  async function shareImage() {
+    setBusy(true);
+    try {
+      const blob = await loadImage(cardUrl);
       const file = new File([blob], fileName, { type: "image/png" });
       // Mobile: native share sheet (Instagram, WhatsApp, Google Chat…). Desktop: download.
+      // Only the file is shared: when apps like Instagram also receive text, they
+      // may keep the text and drop the image. The quote is already in the image.
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: `“${text}” — ${quote.author}` });
+        await navigator.share({ files: [file] });
       } else {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
