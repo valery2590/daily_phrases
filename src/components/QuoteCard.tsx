@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
 import { APP_NAME, APP_SLUG } from "@/lib/brand";
 import { VfhSymbol } from "./VfhSymbol";
+import { LESSON_FILE, lessonLines } from "@/lib/quotes/lesson";
 
 type Strings = {
   locale: string;
@@ -290,17 +291,36 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
         </footer>
       </blockquote>
 
-      <p className="mt-8 border-t border-dashed border-line pt-6 font-mono text-sm leading-relaxed text-accent sm:text-base">
+      <figure className="mt-8 overflow-hidden rounded-2xl border border-line bg-bg font-mono text-sm sm:text-base">
+        <figcaption className="flex items-center justify-between border-b border-line px-4 py-2 text-xs text-muted sm:px-5">
+          <span className="flex items-center gap-2">
+            <span aria-hidden className="size-2 rounded-full bg-signal" />
+            <Crossfade active={lang} render={(l) => LESSON_FILE[l]} />
+          </span>
+          <span aria-hidden className="text-signal">
+            {"</>"}
+          </span>
+        </figcaption>
         <Crossfade
           active={lang}
+          className="px-4 py-4 sm:px-5"
           render={(l) => (
-            <span lang={l} className="block">
-              <span aria-hidden>{"// "}</span>
-              {quote.lesson[l]}
+            <span lang={l} className="flex flex-col gap-1 leading-relaxed">
+              {lessonLines(quote.lesson[l]).map((line, i) => (
+                <span key={i} className="flex">
+                  <span aria-hidden className="w-6 shrink-0 select-none text-cable">
+                    {i + 1}
+                  </span>
+                  <span aria-hidden className="w-7 shrink-0 select-none text-muted">
+                    {"//"}
+                  </span>
+                  <span className="min-w-0 text-accent">{line}</span>
+                </span>
+              ))}
             </span>
           )}
         />
-      </p>
+      </figure>
 
       <section className="mt-10 border-t border-line pt-6" aria-label={t.save}>
         <div className="flex gap-4 sm:gap-6">

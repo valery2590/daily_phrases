@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { DailyQuote, Lang } from "@/lib/quotes/types";
+import { LESSON_FILE, lessonLines } from "@/lib/quotes/lesson";
 import { APP_NAME, brandHost } from "@/lib/brand";
 
 /** Sizes for the places people actually share to. */
@@ -21,6 +22,7 @@ export function isCardFormat(value: unknown): value is CardFormat {
 const THEMES = {
   light: {
     bg: "#edeff4",
+    panel: "#ffffff",
     ink: "#131826",
     muted: "#5a6277",
     line: "#d8dce6",
@@ -30,6 +32,7 @@ const THEMES = {
   },
   dark: {
     bg: "#0d1120",
+    panel: "#161b2d",
     ink: "#e7eaf3",
     muted: "#98a0b6",
     line: "#262d44",
@@ -81,6 +84,73 @@ function VfhSymbol({ size, theme }: { size: number; theme: CardTheme }) {
   );
 }
 
+/** The dev lesson as a tiny code editor: file tab, </> mark, numbered lines. */
+function LessonPanel({
+  lines,
+  file,
+  theme,
+  format,
+}: {
+  lines: string[];
+  file: string;
+  theme: CardTheme;
+  format: CardFormat;
+}) {
+  const C = THEMES[theme];
+  const og = format === "og";
+  const size = { story: 32, post: 28, og: 19 }[format];
+  const padX = og ? 20 : 32;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        marginTop: og ? 22 : 52,
+        background: C.panel,
+        border: `2px solid ${C.line}`,
+        borderRadius: og ? 16 : 24,
+        fontFamily: "Mono",
+        fontSize: size,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: `${og ? 8 : 16}px ${padX}px`,
+          borderBottom: `2px solid ${C.line}`,
+          fontSize: Math.round(size * 0.78),
+          color: C.muted,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: og ? 8 : 12 }}>
+          <div style={{ width: og ? 8 : 12, height: og ? 8 : 12, borderRadius: 99, background: C.signal }} />
+          <div>{file}</div>
+        </div>
+        <div style={{ color: C.signal }}>{"</>"}</div>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: og ? 2 : 6,
+          padding: `${og ? 12 : 24}px ${padX}px`,
+          lineHeight: 1.4,
+        }}
+      >
+        {lines.map((line, i) => (
+          <div key={i} style={{ display: "flex" }}>
+            <div style={{ width: size * 1.6, flexShrink: 0, color: C.cable }}>{String(i + 1)}</div>
+            <div style={{ width: size * 1.9, flexShrink: 0, color: C.muted }}>{"//"}</div>
+            <div style={{ display: "flex", flex: 1, color: C.accent }}>{line}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Long quotes get a smaller type size so quote + lesson always fit the card. */
 function quoteFontSize(text: string, format: CardFormat): number {
   const base = { story: 72, post: 60, og: 40 }[format];
@@ -115,7 +185,6 @@ export async function renderQuoteCard(
 
   const pad = format === "og" ? 64 : 96;
   const fontSize = quoteFontSize(text, format);
-  const lessonSize = { story: 36, post: 31, og: 22 }[format];
 
   return new ImageResponse(
     (
@@ -181,20 +250,12 @@ export async function renderQuoteCard(
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              marginTop: format === "og" ? 28 : 56,
-              paddingTop: format === "og" ? 20 : 40,
-              borderTop: `2px dashed ${C.line}`,
-              fontFamily: "Mono",
-              fontSize: lessonSize,
-              lineHeight: 1.45,
-              color: C.accent,
-            }}
-          >
-            {`// ${quote.lesson[lang]}`}
-          </div>
+          <LessonPanel
+            lines={lessonLines(quote.lesson[lang])}
+            file={LESSON_FILE[lang]}
+            theme={theme}
+            format={format}
+          />
         </div>
 
         <div
