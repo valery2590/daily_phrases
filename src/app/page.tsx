@@ -4,7 +4,7 @@ import { QuoteCard } from "@/components/QuoteCard";
 import { BRAND, TAGLINE } from "@/lib/brand";
 
 export default async function Home() {
-  // Rendered per request so the quote switches exactly at UTC midnight. It is cheap:
+  // Rendered per request so the quote switches exactly at midnight (Madrid time). It is cheap:
   // the quote comes from the in-repo catalog, with no network calls.
   await connection();
   const quote = getDailyQuote();

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     : quote;
 
   return NextResponse.json(body, {
-    // The quote is fixed for the whole UTC day: shared caches keep it until midnight.
+    // The quote is fixed for the whole day (Madrid time): shared caches keep it until midnight.
     headers: { "Cache-Control": `public, s-maxage=${secondsUntilNextDay(now)}` },
   });
 }

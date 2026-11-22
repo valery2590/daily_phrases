@@ -5,8 +5,8 @@ import {
   getDailyQuote,
   getQuoteById,
   LAUNCH_DATE,
+  dateKey,
   secondsUntilNextDay,
-  utcDateKey,
 } from "@/lib/quotes/getDailyQuote";
 import { LANGS } from "@/lib/quotes/types";
 
@@ -66,8 +66,12 @@ describe("daily rotation", () => {
     expect(new Set(before).size).toBe(CATALOG.length);
   });
 
-  it("uses the UTC day, not the server's local day", () => {
-    expect(utcDateKey(new Date("2026-11-23T23:30:00-05:00"))).toBe("2026-11-24");
+  it("uses the day in Madrid, not UTC or the server's local day", () => {
+    // 23:30 UTC is already the next day in Madrid (UTC+1 in winter, UTC+2 in summer).
+    expect(dateKey(new Date("2026-11-22T23:30:00Z"))).toBe("2026-11-23");
+    expect(dateKey(new Date("2026-11-22T22:59:00Z"))).toBe("2026-11-22");
+    expect(dateKey(new Date("2027-07-01T22:30:00Z"))).toBe("2027-07-02");
+    expect(dateKey(new Date("2027-07-01T21:30:00Z"))).toBe("2027-07-01");
     expect(getDailyQuote(new Date("2026-11-22T00:00:00Z")).id).toBe(entryForDate("2026-11-22").id);
   });
 
@@ -85,7 +89,12 @@ describe("daily rotation", () => {
   });
 
   it("counts the seconds until the quote changes", () => {
-    expect(secondsUntilNextDay(new Date("2026-11-23T23:59:00Z"))).toBe(60);
-    expect(secondsUntilNextDay(new Date("2026-11-23T00:00:00Z"))).toBe(86_400);
+    // Madrid midnight is 23:00 UTC in winter and 22:00 UTC in summer.
+    expect(secondsUntilNextDay(new Date("2026-11-22T22:59:00Z"))).toBe(60);
+    expect(secondsUntilNextDay(new Date("2026-11-22T23:00:00Z"))).toBe(86_400);
+    expect(secondsUntilNextDay(new Date("2027-07-01T21:59:00Z"))).toBe(60);
+    // DST change days are 23 h (March) and 25 h (October) long.
+    expect(secondsUntilNextDay(new Date("2027-03-27T23:00:00Z"))).toBe(23 * 3600);
+    expect(secondsUntilNextDay(new Date("2027-10-30T22:00:00Z"))).toBe(25 * 3600);
   });
 });

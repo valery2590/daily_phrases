@@ -7,7 +7,7 @@ export function isLang(value: unknown): value is Lang {
 
 /** Today's entry from the curated catalog, resolved for every language. */
 export interface DailyQuote {
-  /** UTC date the quote belongs to, YYYY-MM-DD. */
+  /** Day the quote belongs to (Europe/Madrid), YYYY-MM-DD. */
   date: string;
   /** Stable catalog id. */
   id: string;

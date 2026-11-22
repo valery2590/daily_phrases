@@ -18,11 +18,11 @@ The idea behind it is the stoic dichotomy of control applied to integrations: yo
 flowchart LR
     U([Visitor]) --> P[Page · /api/quote · share image]
     P --> D{{getDailyQuote}}
-    D -->|"UTC date → index"| C[(Curated catalog<br/>quote + lesson<br/>EN · ES · IT)]
+    D -->|"date (Madrid) → index"| C[(Curated catalog<br/>quote + lesson<br/>EN · ES · IT)]
 ```
 
 1. **Catalog**: `src/lib/quotes/catalog.ts` holds every entry: a quote attributable to a specific work, plus a dev lesson, both written and translated by hand.
-2. **Daily rotation**: the catalog is shuffled once per cycle (as many days as entries) with a seeded random generator, and the UTC date picks the position in that order. The order looks random, no quote repeats within a cycle, and the same date always gives the same entry on every server instance, so the page, the JSON API, the share image and any future automation agree without caches, shared state or race conditions.
+2. **Daily rotation**: the catalog is shuffled once per cycle (as many days as entries) with a seeded random generator, and the date in Madrid (Europe/Madrid, so the quote changes at local midnight wherever the server runs) picks the position in that order. The order looks random, no quote repeats within a cycle, and the same date always gives the same entry on every server instance, so the page, the JSON API, the share image and any future automation agree without caches, shared state or race conditions.
 3. **Sharing**: `/api/quote/card` renders the quote and the lesson as a PNG (story, feed post or link preview) with `next/og`, in the brand's colours, fonts and symbol. On mobile, the share button opens the native share sheet.
 
 ## Design decisions
@@ -30,9 +30,9 @@ flowchart LR
 | Decision | Why |
 |---|---|
 | **Curated catalog instead of a quote API** | Each lesson is written for its quote, so the quote must be known in advance. Hand-written translations also avoid machine-translation artefacts and dubious attributions from crowd-sourced APIs. |
-| **Seeded random rotation by UTC date** | Random-looking order with no storage: the date *is* the key, so every route agrees by construction, and every entry shows once before the catalog is reshuffled. |
+| **Seeded random rotation by date (Madrid time)** | Random-looking order with no storage: the date *is* the key, so every route agrees by construction, and every entry shows once before the catalog is reshuffled. |
 | **Length limits checked by tests** (quote ≤ 170, lesson ≤ 110 characters per language) | Both always fit the share card; a too-long entry fails CI instead of overflowing an image. |
-| **Cache until UTC midnight** | The content is fixed for the day, so shared caches can keep it exactly until it changes. |
+| **Cache until midnight (Madrid time)** | The content is fixed for the day, so shared caches can keep it exactly until it changes. |
 | **`fetchWithRetry` kept** (timeout per attempt, retries only network errors/timeouts/429/5xx, backoff with jitter, `Retry-After`) | Ready for the upcoming Instagram auto-post, which calls the Meta API. |
 
 ## Adding entries
