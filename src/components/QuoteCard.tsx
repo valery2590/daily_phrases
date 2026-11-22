@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
 import { APP_NAME, APP_SLUG } from "@/lib/brand";
+import { VfhSymbol } from "./VfhSymbol";
 
 type Strings = {
-  eyebrow: string;
   locale: string;
   save: string;
   copy: string;
@@ -21,7 +21,6 @@ type Strings = {
 
 const UI: Record<Lang, Strings> = {
   en: {
-    eyebrow: APP_NAME,
     locale: "en-GB",
     save: "Save image",
     copy: "Copy text",
@@ -35,7 +34,6 @@ const UI: Record<Lang, Strings> = {
     preview: "Preview of the image to share",
   },
   es: {
-    eyebrow: APP_NAME,
     locale: "es-ES",
     save: "Guardar imagen",
     copy: "Copiar texto",
@@ -49,7 +47,6 @@ const UI: Record<Lang, Strings> = {
     preview: "Vista previa de la imagen para compartir",
   },
   it: {
-    eyebrow: APP_NAME,
     locale: "it-IT",
     save: "Salva immagine",
     copy: "Copia testo",
@@ -240,7 +237,7 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   }
 
   async function copyText() {
-    await navigator.clipboard.writeText(`“${text}”\n— ${quote.author[lang]}\n${window.location.origin}`);
+    await navigator.clipboard.writeText(`“${text}”\n— ${quote.author[lang]}, ${quote.work[lang]}\n\n// ${quote.lesson[lang]}\n\n${APP_NAME} · ${window.location.origin}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }
@@ -248,10 +245,15 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   return (
     <article className="rounded-3xl border border-line bg-surface p-6 shadow-[0_1px_0_var(--line)] sm:p-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <p className="flex items-center gap-2.5 text-xs font-medium uppercase tracking-[0.18em] text-accent">
-          <span aria-hidden className="size-2 shrink-0 rounded-full bg-signal" />
-          <Crossfade active={lang} render={(l) => `${UI[l].eyebrow} · ${formatDate(quote.date, UI[l].locale)}`} />
-        </p>
+        <div className="flex items-center gap-3">
+          <VfhSymbol className="size-8 shrink-0" />
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-xs font-medium uppercase tracking-[0.18em] text-accent">{APP_NAME}</h1>
+            <p className="text-xs text-muted">
+              <Crossfade active={lang} render={(l) => formatDate(quote.date, UI[l].locale)} />
+            </p>
+          </div>
+        </div>
         <div role="tablist" aria-label="Language" className="flex gap-1 rounded-full border border-line p-1">
           {LANGS.map((l) => (
             <button
@@ -284,9 +286,21 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
         />
         <footer className="mt-6 flex items-center gap-3 text-muted">
           <span aria-hidden className="h-1 w-8 rounded-full bg-accent" />
-          <Crossfade active={lang} render={(l) => quote.author[l]} />
+          <Crossfade active={lang} render={(l) => `${quote.author[l]} · ${quote.work[l]}`} />
         </footer>
       </blockquote>
+
+      <p className="mt-8 border-t border-dashed border-line pt-6 font-mono text-sm leading-relaxed text-accent sm:text-base">
+        <Crossfade
+          active={lang}
+          render={(l) => (
+            <span lang={l} className="block">
+              <span aria-hidden>{"// "}</span>
+              {quote.lesson[l]}
+            </span>
+          )}
+        />
+      </p>
 
       <section className="mt-10 border-t border-line pt-6" aria-label={t.save}>
         <div className="flex gap-4 sm:gap-6">

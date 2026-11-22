@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { getDailyQuote } from "@/lib/quotes/getDailyQuote";
 import { QuoteCard } from "@/components/QuoteCard";
-import { BRAND } from "@/lib/brand";
+import { BRAND, TAGLINE } from "@/lib/brand";
 
 export default async function Home() {
   // Rendered per request so the quote switches exactly at UTC midnight. It is cheap:
@@ -25,7 +25,7 @@ export default async function Home() {
           </a>
         </div>
         <span className="text-xs">
-          Quotes from public-domain works by Epictetus, Marcus Aurelius and Seneca.
+          {TAGLINE.en} Quotes from public-domain works by Epictetus, Marcus Aurelius and Seneca.
         </span>
       </footer>
     </main>
