@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { DailyQuote, Lang } from "@/lib/quotes/types";
-import { brandHost } from "@/lib/brand";
+import { APP_NAME, brandHost } from "@/lib/brand";
 
 /** Sizes for the places people actually share to. */
 export const CARD_FORMATS = {
@@ -43,9 +43,9 @@ export function isCardTheme(value: unknown): value is CardTheme {
 }
 
 const LABELS: Record<Lang, { eyebrow: string; locale: string }> = {
-  en: { eyebrow: "Daily Stoic", locale: "en-GB" },
-  es: { eyebrow: "Estoico del día", locale: "es-ES" },
-  it: { eyebrow: "Stoico del giorno", locale: "it-IT" },
+  en: { eyebrow: APP_NAME, locale: "en-GB" },
+  es: { eyebrow: APP_NAME, locale: "es-ES" },
+  it: { eyebrow: APP_NAME, locale: "it-IT" },
 };
 
 const fontDir = join(process.cwd(), "assets", "fonts");

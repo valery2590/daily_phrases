@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDailyQuote, getQuoteById, secondsUntilNextDay } from "@/lib/quotes/getDailyQuote";
 import { isLang, LANGS } from "@/lib/quotes/types";
+import { APP_SLUG } from "@/lib/brand";
 import { CARD_FORMATS, isCardFormat, isCardTheme, renderQuoteCard, shareFooter } from "@/lib/share/renderCard";
 
 /**
@@ -40,6 +41,6 @@ export async function GET(request: NextRequest) {
 
   // The quote is fixed for the whole UTC day: shared caches keep the image until midnight.
   image.headers.set("Cache-Control", previewId ? "no-store" : `public, s-maxage=${secondsUntilNextDay(now)}`);
-  image.headers.set("Content-Disposition", `inline; filename="daily-stoic-${quote.date}-${lang}-${format}-${theme}.png"`);
+  image.headers.set("Content-Disposition", `inline; filename="${APP_SLUG}-${quote.date}-${lang}-${format}-${theme}.png"`);
   return image;
 }

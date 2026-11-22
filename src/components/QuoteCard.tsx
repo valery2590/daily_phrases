@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LANGS, type DailyQuote, type Lang } from "@/lib/quotes/types";
+import { APP_NAME, APP_SLUG } from "@/lib/brand";
 
 type Strings = {
   eyebrow: string;
@@ -20,7 +21,7 @@ type Strings = {
 
 const UI: Record<Lang, Strings> = {
   en: {
-    eyebrow: "Daily Stoic",
+    eyebrow: APP_NAME,
     locale: "en-GB",
     save: "Save image",
     copy: "Copy text",
@@ -34,7 +35,7 @@ const UI: Record<Lang, Strings> = {
     preview: "Preview of the image to share",
   },
   es: {
-    eyebrow: "Estoico del día",
+    eyebrow: APP_NAME,
     locale: "es-ES",
     save: "Guardar imagen",
     copy: "Copiar texto",
@@ -48,7 +49,7 @@ const UI: Record<Lang, Strings> = {
     preview: "Vista previa de la imagen para compartir",
   },
   it: {
-    eyebrow: "Stoico del giorno",
+    eyebrow: APP_NAME,
     locale: "it-IT",
     save: "Salva immagine",
     copy: "Copia testo",
@@ -178,7 +179,7 @@ export function QuoteCard({ quote }: { quote: DailyQuote }) {
   const textFor = (l: Lang) => quote.text[l];
   const text = textFor(lang);
   const cardUrl = `/api/quote/card?lang=${lang}&format=${format}&theme=${theme}`;
-  const fileName = `daily-stoic-${quote.date}-${lang}-${format}.png`;
+  const fileName = `${APP_SLUG}-${quote.date}-${lang}-${format}-${theme}.png`;
 
   // Download the image ahead of the tap. iOS only opens the share sheet while the
   // tap is "fresh"; awaiting a network request first can make the share fail.
